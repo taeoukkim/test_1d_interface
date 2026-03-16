@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -m64 -O3 -std=c++20 -fPIC -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/test_interface_loader.dir/src/OneDSolverInterface.cpp.o CMakeFiles/test_interface_loader.dir/src/test_interface_loader.cpp.o -o bin/test_interface_loader
