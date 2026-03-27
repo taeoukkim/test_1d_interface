@@ -26,24 +26,20 @@ class OneDSolverInterface {
                   const std::string& coupling_type);
 
   // Set external time step
-  void set_external_step_size(double external_step_size);
+  void set_external_step_size(int& problem_id_, double external_step_size);
 
-  // Update boundary conditions
-  void update_coupled_bc(int num_surfaces, double* input_values,
-                        const std::string& coupling_type);
+  // 
+  void return_solution(int& problem_id_, double* solution_1d, int solution_size);
 
-  // Get solution at coupled surfaces
-  void get_coupled_solution(int num_surfaces, double* flows_out,
-                           double* pressures_out);
+  //
+  void update_solution(int& problem_id_, double* previous_solution_data, int solution_size);
 
   // Run one time step
-  void run_1d_simulation_step(double dt, int& error_code);
-
-  // Get resistance matrix
-  void get_resistance_matrix(int num_surfaces, double** resistance_matrix);
-
-  // Cleanup
-  void cleanup();
+  void run_1d_simulation_step(int problem_id, double current_time, int save_time, const std::string& coupling_type, double* params,
+                                          double* solution_vector,double& cplBCvalue,int& error_code);
+  
+  // Extract coupled DOF information
+  void extract_coupled_dof(int problem_id, int& coupled_dof, const std::string& coupling_types);
 
   // Member data
   void* library_handle_ = nullptr;
@@ -53,11 +49,10 @@ class OneDSolverInterface {
   // Function pointers to shared library functions
   void (*initialize_1d_)(const char*, int&, int&, const char*) = nullptr;
   void (*set_external_step_size_1d_)(int, double) = nullptr;
-  void (*update_coupled_bc_1d_)(int, int, double*, const char*) = nullptr;
-  void (*get_coupled_solution_1d_)(int, int, double*, double*) = nullptr;
-  void (*run_1d_simulation_step_1d_)(int, double, int&) = nullptr;
-  void (*get_resistance_matrix_1d_)(int, int, double**) = nullptr;
-  void (*cleanup_1d_)(int) = nullptr;
+  void (*return_1d_solution_)(int, double*, int) = nullptr;
+  void (*update_1d_solution_)(int, double*, int) = nullptr;
+  void (*run_1d_simulation_step_1d_)(int, double, int, const char*, double*, double*, double&, int&) = nullptr;
+  void (*extract_coupled_dof_)(int, int&, char*) = nullptr;
 };
 
 #endif

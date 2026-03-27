@@ -42,18 +42,16 @@ void OneDSolverInterface::load_library(const std::string& interface_lib) {
         std::string("Error loading function 'set_external_step_size_1d': ") + dlerror());
   }
 
-  // Load update_coupled_bc_1d function
-  *(void**)(&update_coupled_bc_1d_) = dlsym(library_handle_, "update_coupled_bc_1d");
-  if (!update_coupled_bc_1d_) {
-    throw std::runtime_error(std::string("Error loading function 'update_coupled_bc_1d': ") +
-                           dlerror());
+  *(void**)(&return_1d_solution_) = dlsym(library_handle_, "return_1d_solution");
+  if (!return_1d_solution_) {
+    throw std::runtime_error(
+        std::string("Error loading function 'return_1d_solution': ") + dlerror());
   }
 
-  // Load get_coupled_solution_1d function
-  *(void**)(&get_coupled_solution_1d_) = dlsym(library_handle_, "get_coupled_solution_1d");
-  if (!get_coupled_solution_1d_) {
-    throw std::runtime_error(std::string("Error loading function 'get_coupled_solution_1d': ") +
-                           dlerror());
+  *(void**)(&update_1d_solution_) = dlsym(library_handle_, "update_1d_solution");
+  if (!update_1d_solution_) {
+    throw std::runtime_error(
+        std::string("Error loading function 'update_1d_solution': ") + dlerror());
   }
 
   // Load run_1d_simulation_step_1d function
@@ -63,17 +61,10 @@ void OneDSolverInterface::load_library(const std::string& interface_lib) {
         std::string("Error loading function 'run_1d_simulation_step_1d': ") + dlerror());
   }
 
-  // Load get_resistance_matrix_1d function
-  *(void**)(&get_resistance_matrix_1d_) = dlsym(library_handle_, "get_resistance_matrix_1d");
-  if (!get_resistance_matrix_1d_) {
-    throw std::runtime_error(std::string("Error loading function 'get_resistance_matrix_1d': ") +
-                           dlerror());
-  }
-
-  // Load cleanup_1d function
-  *(void**)(&cleanup_1d_) = dlsym(library_handle_, "cleanup_1d");
-  if (!cleanup_1d_) {
-    throw std::runtime_error(std::string("Error loading function 'cleanup_1d': ") + dlerror());
+  *(void**)(&extract_coupled_dof_) = dlsym(library_handle_, "extract_coupled_dof");
+  if (!extract_coupled_dof_) {
+    throw std::runtime_error(
+        std::string("Error loading function 'extract_coupled_dof': ") + dlerror());
   }
 
   cout << "[OneDSolverInterface::load_library] All functions loaded successfully" << endl;
@@ -92,47 +83,38 @@ void OneDSolverInterface::initialize(const std::string& input_file, int& problem
   cout << "[OneDSolverInterface::initialize] problem_id: " << problem_id_ << endl;
 }
 
-void OneDSolverInterface::set_external_step_size(double external_step_size) {
+void OneDSolverInterface::set_external_step_size(int& problem_id_, double external_step_size) {
   if (!set_external_step_size_1d_) {
     throw std::runtime_error("set_external_step_size_1d not loaded");
   }
   set_external_step_size_1d_(problem_id_, external_step_size);
 }
 
-void OneDSolverInterface::update_coupled_bc(int num_surfaces, double* input_values,
-                                           const std::string& coupling_type) {
-  if (!update_coupled_bc_1d_) {
-    throw std::runtime_error("update_coupled_bc_1d not loaded");
+void OneDSolverInterface::return_solution(int& problem_id_, double* solution_1d, int solution_size) {
+  if (!return_1d_solution_) {
+    throw std::runtime_error("return_1d_solution not loaded");
   }
-  update_coupled_bc_1d_(problem_id_, num_surfaces, input_values, coupling_type.c_str());
+  return_1d_solution_(problem_id_, solution_1d, solution_size);
 }
 
-void OneDSolverInterface::get_coupled_solution(int num_surfaces, double* flows_out,
-                                             double* pressures_out) {
-  if (!get_coupled_solution_1d_) {
-    throw std::runtime_error("get_coupled_solution_1d not loaded");
+void OneDSolverInterface::update_solution(int& problem_id_, double* previous_solution_data, int solution_size) {
+  if (!update_1d_solution_) {
+    throw std::runtime_error("update_1d_solution not loaded");
   }
-  get_coupled_solution_1d_(problem_id_, num_surfaces, flows_out, pressures_out);
+  update_1d_solution_(problem_id_, previous_solution_data, solution_size);
 }
 
-void OneDSolverInterface::run_1d_simulation_step(double dt, int& error_code) {
+
+void OneDSolverInterface::run_1d_simulation_step(int problem_id_, double current_time, int save_time, const std::string& coupling_type, double* params, double* solution_vector, double& cplBCvalue, int& error_code) {
   if (!run_1d_simulation_step_1d_) {
     throw std::runtime_error("run_1d_simulation_step_1d not loaded");
   }
-  run_1d_simulation_step_1d_(problem_id_, dt, error_code);
+  run_1d_simulation_step_1d_(problem_id_, current_time, save_time, (char*)coupling_type.c_str(), params, solution_vector, cplBCvalue, error_code);
 }
 
-void OneDSolverInterface::get_resistance_matrix(int num_surfaces, double** resistance_matrix) {
-  if (!get_resistance_matrix_1d_) {
-    throw std::runtime_error("get_resistance_matrix_1d not loaded");
+void OneDSolverInterface::extract_coupled_dof(int problem_id, int& coupled_dof, const std::string& coupling_types) {
+  if (!extract_coupled_dof_) {
+    throw std::runtime_error("extract_coupled_dof not loaded");
   }
-  get_resistance_matrix_1d_(problem_id_, num_surfaces, resistance_matrix);
-}
-
-void OneDSolverInterface::cleanup() {
-  if (!cleanup_1d_) {
-    throw std::runtime_error("cleanup_1d not loaded");
-  }
-  cleanup_1d_(problem_id_);
-  cout << "[OneDSolverInterface::cleanup] Cleanup completed" << endl;
+  extract_coupled_dof_(problem_id, coupled_dof, (char*)coupling_types.c_str());
 }
